@@ -1,12 +1,12 @@
 const _ = require('lodash');
 const jwt = require('jwt-simple');
 const express = require('express');
+const session = require('express-session');
+const flash = require('connect-flash');
+const passport = require('passport');
+const bodyParser = require('body-parser');
+const AccountModel = require('./server/account.model.js').model;
 const app = express();
-
-app.use(express.static(`${__dirname}/build`));
-app.use(require('body-parser').json({ limit: '25mb' }));
-app.use(require('cookie-parser')());
-app.use(require('./server/forcessl.mw.js'));
 
 const config = require('nconf')
 	.argv()
@@ -14,21 +14,30 @@ const config = require('nconf')
 	.file('environment', { file: `config/${process.env.NODE_ENV}.json` })
 	.file('defaults', { file: 'config/default.json' });
 
+app.use(express.static(`${__dirname}/build`));
+app.use(session({ secret: config.get('secret') }));
+app.use(bodyParser.json({ limit: '25mb' }));
+// TODO: is it possible to get bodyparser only to some part of requests?
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(require('cookie-parser')());
+app.use(flash());
+app.use(passport.initialize());		// Used to initialize passport
+app.use(passport.session());		// Used to persist login sessions
+
 //DB
-const mongoose = require('mongoose');
-mongoose.connect(config.get('mongodb_uri') || config.get('mongolab_uri') || 'mongodb://localhost/naturalcrit');
-mongoose.connection.on('error', ()=>{
-	console.log('Error : Could not connect to a Mongo Database.');
-	console.log('        If you are running locally, make sure mongodb.exe is running.');
-	throw 'Can not connect to Mongo';
-});
+const database = require('./server/database');
+database.connect();
 
+passport.serializeUser(AccountModel.serializeAccount());
+passport.deserializeUser(AccountModel.deserializeAccount());
 
-//Account Middleware
+//Account MIddleware
 app.use((req, res, next)=>{
 	if(req.cookies && req.cookies.nc_session){
 		try {
-			req.account = jwt.decode(req.cookies.nc_session, config.get('secret'));
+			const account = jwt.decode(req.cookies.nc_session, config.get('secret'));
+			account.old = true;
+			req.oldAccount = account;
 		} catch (e){}
 	}
 	return next();
@@ -37,6 +46,7 @@ app.use((req, res, next)=>{
 
 app.use(require('./server/homebrew.api.js'));
 app.use(require('./server/admin.api.js'));
+app.use(require('./server/account.routes.js'));
 
 
 const HomebrewModel = require('./server/homebrew.model.js').model;
@@ -125,7 +135,8 @@ app.use((req, res)=>{
 		changelog   : changelogText,
 		brew        : req.brew,
 		brews       : req.brews,
-		account     : req.account
+		oldAccount  : req.oldAccount,
+		account     : req.user
 	})
 		.then((page)=>{
 			return res.send(page);
