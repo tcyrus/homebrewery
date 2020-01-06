@@ -1,6 +1,105 @@
 const _ = require('lodash');
 const HomebrewModel = require('./homebrew.model.js').model;
 const router = require('express').Router();
+const {google} = require('googleapis');
+
+
+const oAuth2Client = new google.auth.OAuth2(
+      '510891134909-4nbjhngrpgjub78088povp2fcddr04db.apps.googleusercontent.com', 'gxrKIfY9tGi6q8M_s-84hmRa', '/auth/google/redirect');
+	  
+const authCheck = (req, res, next) => {
+	console.log("running authcheck");
+	if(!req.user){
+		// if user is not logged in
+		console.log("not logged in")
+		res.redirect('/auth/google');
+		console.log("redirected to login");
+	} else {
+		// if logged in
+		console.log("logged in!");
+		next();
+	}
+};
+
+var fileMetadata;
+var media;
+
+/*	  
+function createFile(auth) {
+	const drive = google.drive({version: 'v3', auth});
+	return new Promise((resolve, reject)=>{
+		drive.files.create({
+			resource: fileMetadata,
+			media: media,
+			fields: 'id'
+		}).then(function (res) {
+				console.log('SAVED FILE:');
+				console.log(res.data);
+				resolve(res.data);
+			}, function(err) {
+				if (err) {
+					console.error(err);
+				}
+				reject();
+		});
+	});
+}*/
+
+function createFile(auth, id) {
+	const drive = google.drive({version: 'v3', auth});
+	
+	return drive.files.create({
+		resource: fileMetadata,
+		media: media,
+		fileId: id,
+		fields: 'id'
+	});
+}
+
+// Save file to Google Drive  
+router.put('/api/NEWupdate/:id', authCheck, (req, res)=>{
+	console.log("Saving to Google");
+	
+	oAuth2Client.setCredentials({
+		access_token: req.user.googleAccessToken,
+		refresh_token: req.user.googleRefreshToken
+    });
+	
+	HomebrewModel.get({ editId: req.params.id })
+		.then((brew)=>{
+			brew = _.merge(brew, req.body);
+			brew.updatedAt = new Date();
+			if(req.account) brew.authors = _.uniq(_.concat(brew.authors, req.account.username));
+
+			brew.markModified('authors');
+			brew.markModified('systems');
+
+			media = {
+			  mimeType: 'text/plain',
+			  body: brew.text
+			};
+			
+			fileMetadata = {
+				'name': brew.title + '.txt',
+				'appProperties': {
+					'shareId': brew.shareId,
+					'editId' : brew.editId,
+					'title'  : brew.title,
+				}
+			};
+
+			createFile(oAuth2Client, id)
+				.then((obj, err)=>{
+					if(err) throw err;
+					return res.status(200).send(brew);
+				});
+		})
+		.catch((err)=>{
+			console.log(err);
+			return res.status(500).send('Error while saving');
+		});
+});	  
+	  
 
 // const getTopBrews = (cb)=>{
 // 	HomebrewModel.find().sort({ views: -1 }).limit(5).exec(function(err, brews) {
@@ -73,6 +172,9 @@ router.get('/api/remove/:id', (req, res)=>{
 			return res.status(200).send();
 		});
 	});
+});
+
+router.get('/api/getgooglebrews/:id', (req, res)=>{
 });
 
 

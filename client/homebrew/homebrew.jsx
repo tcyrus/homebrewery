@@ -61,6 +61,8 @@ const Homebrew = createClass({
 				return <UserPage
 					username={args.username}
 					brews={this.props.brews}
+					googleBrews={this.props.googleBrews}
+					
 				/>;
 			},
 			'/print/:id' : (args, query)=>{

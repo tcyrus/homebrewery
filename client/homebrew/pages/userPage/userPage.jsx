@@ -22,7 +22,8 @@ const UserPage = createClass({
 	getDefaultProps : function() {
 		return {
 			username : '',
-			brews    : []
+			brews    : [],
+			googleBrews : []
 		};
 	},
 
@@ -50,9 +51,19 @@ const UserPage = createClass({
 			this.renderBrews(privateBrews)
 		];
 	},
+	
+	renderGoogleBrews : function(googleBrews){
+		if(!googleBrews || !googleBrews.length) return;
+		
+		return [
+			<h1>{this.props.username}'s GOOGLE brews</h1>,
+			this.renderBrews(googleBrews)
+		];
+	},
 
 	render : function(){
 		const brews = this.getSortedBrews();
+		const googleBrews = this.props.googleBrews;
 
 		return <div className='userPage page'>
 			<Navbar>
@@ -67,6 +78,7 @@ const UserPage = createClass({
 					<h1>{this.props.username}'s brews</h1>
 					{this.renderBrews(brews.published)}
 					{this.renderPrivateBrews(brews.private)}
+					{this.renderGoogleBrews(googleBrews)}
 				</div>
 			</div>
 		</div>;

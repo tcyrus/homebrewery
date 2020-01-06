@@ -150,6 +150,39 @@ const EditPage = createClass({
 				}
 			});
 	},
+	
+	NEWsave : function(){
+		console.log("starting NEWSAVE");
+		if(this.debounceSave && this.debounceSave.cancel) this.debounceSave.cancel();
+
+		console.log("passed debounce");
+		this.setState((prevState)=>({
+			isSaving   : true,
+			errors     : null,
+			htmlErrors : Markdown.validate(prevState.brew.text)
+		}));
+		
+		console.log("starting html request");
+
+		request
+			.put(`/api/NEWupdate/${this.props.brew.editId}`)
+			.send(this.state.brew)
+			.end((err, res)=>{
+				if(err){
+					console.log("ERROR SAVING EDIT");
+					this.setState({
+						errors : err,
+					});
+				} else {
+					console.log("DONE SAVING EDIT");
+					this.savedBrew = res.body;
+					this.setState({
+						isPending : false,
+						isSaving  : false,
+					});
+				}
+			});
+	},
 
 	renderSaveButton : function(){
 		if(this.state.errors){
@@ -181,6 +214,36 @@ const EditPage = createClass({
 			return <Nav.item className='save saved'>saved.</Nav.item>;
 		}
 	},
+	renderNEWSaveButton : function(){
+		if(this.state.errors){
+			let errMsg = '';
+			try {
+				errMsg += `${this.state.errors.toString()}\n\n`;
+				errMsg += `\`\`\`\n${JSON.stringify(this.state.errors.response.error, null, '  ')}\n\`\`\``;
+			} catch (e){}
+
+			return <Nav.item className='save error' icon='fa-warning'>
+				Oops!
+				<div className='errorContainer'>
+					Looks like there was a problem saving. <br />
+					Report the issue <a target='_blank' rel='noopener noreferrer'
+						href={`https://github.com/stolksdorf/naturalcrit/issues/new?body=${encodeURIComponent(errMsg)}`}>
+						here
+					</a>.
+				</div>
+			</Nav.item>;
+		}
+
+		if(this.state.isSaving){
+			return <Nav.item className='save' icon='fa-spinner fa-spin'>saving...</Nav.item>;
+		}
+		if(this.state.isPending && this.hasChanges()){
+			return <Nav.item className='save' onClick={this.NEWsave} color='blue' icon='fa-eye'>Save Now</Nav.item>;
+		}
+		if(!this.state.isPending && !this.state.isSaving){
+			return <Nav.item className='save saved'>saved.</Nav.item>;
+		}
+	},
 	renderNavbar : function(){
 		return <Navbar>
 			<Nav.section>
@@ -188,7 +251,7 @@ const EditPage = createClass({
 			</Nav.section>
 
 			<Nav.section>
-				{this.renderSaveButton()}
+				{this.renderNEWSaveButton()}
 				<ReportIssue />
 				<Nav.item newTab={true} href={`/share/${this.props.brew.shareId}`} color='teal' icon='fa-share-alt'>
 					Share

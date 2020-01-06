@@ -72,7 +72,6 @@ HomebrewSchema.statics.getByUser = function(username, allowAccess=false){
 };
 
 
-
 const Homebrew = mongoose.model('Homebrew', HomebrewSchema);
 
 module.exports = {
