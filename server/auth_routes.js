@@ -14,7 +14,7 @@ router.get('/logout', (req, res) => {
 
 // auth with google - goes to google authentication popup
 router.get('/google', passport.authenticate('google', {
-	scope: ['profile', 'https://www.googleapis.com/auth/drive']
+	scope: ['profile', 'https://www.googleapis.com/auth/drive.file']
 	//scope: ['profile']
 }));
 

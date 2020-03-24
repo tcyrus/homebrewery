@@ -23,13 +23,14 @@ app.use(cookieSession({
 
 // initialize passport
 app.use(passport.initialize());
-app.use(passport.session());
 
+//app.use(passport.session());
 //app.use(require('./server/forcessl.mw.js'));
 
+// Load configuration values
 const config = require('nconf')
 	.argv()
-	.env({ lowerCase: true })
+	.env({ lowerCase: true })	// Load environment variables
 	.file('environment', { file: `config/${process.env.NODE_ENV}.json` })
 	.file('defaults', { file: 'config/default.json' });
 
@@ -43,7 +44,6 @@ mongoose.connection.on('error', ()=>{
 	console.log('        If you are running locally, make sure mongodb.exe is running.');
 	throw 'Can not connect to Mongo';
 });
-
 
 //Account Middleware
 app.use((req, res, next)=>{
@@ -123,7 +123,7 @@ const templateFn = require('./client/template.js');
 app.use((req, res)=>{
 	console.log("GBREWS SERVER");
 	console.log(req.googleBrews);
-	
+
 	render('homebrew', templateFn, {
 		version     : require('./package.json').version,
 		url         : req.originalUrl,

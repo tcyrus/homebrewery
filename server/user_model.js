@@ -7,17 +7,19 @@ const bcrypt = require('bcrypt-nodejs');
 const SALT_WORK_FACTOR = 10;
 
 const UserSchema = new Schema({
-	
+
+	// Rename shorter to save space
 	username: { type: String, required: true, index: { unique: true } },
 	password: { type: String},
-	
+
+	// Rename shorter to save space
 	googleId:           String,
 	googleAccessToken:  String,
 	googleRefreshToken: String,
-	
-	brewsGoogle:       [String],			//GoogleIDs of the files stored on google drives
-	brewsHomebrewery:  [String]				//IDs of the files stores on HomeBrewery 
-	
+
+	googleBrews:       [String],			//GoogleIDs of the files stored on google drives
+	homebreweryBrews:  [String]				//IDs of the files stores on HomeBrewery
+
 }, { versionKey: false });
 
 UserSchema.pre('save', function(next) {
