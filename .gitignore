@@ -9,3 +9,5 @@ config/local.*
 
 todo.md
 config/dev.json
+startDB.dat
+startMViewer.bat
